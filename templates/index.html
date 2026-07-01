@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Check-In System</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #6366f1;
+            --primary-hover: #4f46e5;
+            --bg-color: #0f172a;
+            --glass-bg: rgba(30, 41, 59, 0.7);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --text-light: #f8fafc;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Outfit', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            background-image: 
+                radial-gradient(at 0% 0%, hsla(253,16%,7%,1) 0, transparent 50%), 
+                radial-gradient(at 50% 0%, hsla(225,39%,30%,1) 0, transparent 50%), 
+                radial-gradient(at 100% 0%, hsla(339,49%,30%,1) 0, transparent 50%);
+            background-attachment: fixed;
+            color: var(--text-light);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            position: relative;
+        }
+
+        /* Đồng hồ thời gian thực */
+        .clock {
+            position: absolute;
+            top: 2rem;
+            right: 2rem;
+            background: var(--glass-bg);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--glass-border);
+            padding: 0.8rem 1.5rem;
+            border-radius: 999px;
+            font-size: 1.1rem;
+            font-weight: 400;
+            color: var(--text-light);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            z-index: 100;
+        }
+
+        .clock-icon {
+            font-size: 1.2rem;
+        }
+
+        .container {
+            background: var(--glass-bg);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+            padding: 2.5rem;
+            width: 90%;
+            max-width: 600px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            text-align: center;
+        }
+
+        h1 {
+            font-weight: 600;
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(to right, #a855f7, #3b82f6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        p.subtitle {
+            color: #94a3b8;
+            margin-bottom: 2rem;
+        }
+
+        .camera-wrapper {
+            position: relative;
+            width: 100%;
+            aspect-ratio: 4/3;
+            border-radius: 16px;
+            overflow: hidden;
+            background: #000;
+            margin-bottom: 2rem;
+            border: 2px solid var(--glass-border);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+
+        video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transform: scaleX(-1); /* Lật hình như soi gương */
+        }
+        
+        .scan-line {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: rgba(99, 102, 241, 0.8);
+            box-shadow: 0 0 15px rgba(99, 102, 241, 0.8);
+            display: none;
+            animation: scan 2s linear infinite;
+        }
+
+        @keyframes scan {
+            0% { top: 0%; }
+            50% { top: 100%; }
+            100% { top: 0%; }
+        }
+
+        button {
+            background: linear-gradient(135deg, var(--primary), var(--primary-hover));
+            color: white;
+            border: none;
+            padding: 1rem 2.5rem;
+            font-size: 1.1rem;
+            font-weight: 600;
+            border-radius: 999px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(99, 102, 241, 0.4);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(99, 102, 241, 0.6);
+        }
+
+        button:disabled {
+            background: #475569;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .status {
+            margin-top: 1.5rem;
+            padding: 1rem;
+            border-radius: 12px;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid var(--glass-border);
+            display: none;
+            font-size: 1.1rem;
+            animation: fadeIn 0.5s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+            margin-right: 8px;
+            display: none;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Reponsive cho mobile */
+        @media (max-width: 768px) {
+            .clock {
+                top: 1rem;
+                right: 50%;
+                transform: translateX(50%);
+                font-size: 0.9rem;
+                padding: 0.5rem 1rem;
+            }
+            .container {
+                margin-top: 4rem;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Đồng hồ Real-time -->
+    <div class="clock" id="clock">
+        <span class="clock-icon">🕒</span>
+        <span id="timeText">--:--:--</span>
+    </div>
+
+    <div class="container">
+        <h1>AI Face Check-In</h1>
+        <p class="subtitle">Xin chào, vui lòng nhìn vào camera để điểm danh</p>
+        
+        <div class="camera-wrapper">
+            <video id="video" autoplay playsinline></video>
+            <div class="scan-line" id="scanLine"></div>
+        </div>
+        
+        <button id="checkinBtn">
+            <div class="spinner" id="spinner"></div>
+            <span id="btnText">Thực hiện Check-in</span>
+        </button>
+        
+        <div class="status" id="statusMessage"></div>
+    </div>
+    
+    <canvas id="canvas" style="display:none;"></canvas>
+
+    <script>
+        // Cập nhật đồng hồ
+        function updateClock() {
+            const now = new Date();
+            const options = { weekday: 'long', year: 'numeric', month: '2-digit', day: '2-digit' };
+            const dateStr = now.toLocaleDateString('vi-VN', options);
+            const timeStr = now.toLocaleTimeString('vi-VN', { hour12: false });
+            document.getElementById('timeText').innerHTML = `<strong>${timeStr}</strong> | ${dateStr}`;
+        }
+        setInterval(updateClock, 1000);
+        updateClock();
+
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('canvas');
+        const checkinBtn = document.getElementById('checkinBtn');
+        const statusMessage = document.getElementById('statusMessage');
+        const scanLine = document.getElementById('scanLine');
+        const spinner = document.getElementById('spinner');
+        const btnText = document.getElementById('btnText');
+
+        // Khởi động webcam
+        async function setupCamera() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { width: 1280, height: 720, facingMode: "user" } 
+                });
+                video.srcObject = stream;
+            } catch (err) {
+                console.error("Lỗi khi mở camera:", err);
+                showStatus("Không thể mở camera. Vui lòng cấp quyền truy cập.", "error");
+            }
+        }
+        
+        function showStatus(msg, type) {
+            statusMessage.style.display = 'block';
+            statusMessage.innerHTML = msg;
+            if(type === 'error') {
+                statusMessage.style.borderLeft = '4px solid #ef4444';
+            } else if(type === 'success') {
+                statusMessage.style.borderLeft = '4px solid #10b981';
+            } else {
+                statusMessage.style.borderLeft = '4px solid #3b82f6';
+            }
+        }
+
+        checkinBtn.addEventListener('click', async () => {
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            const ctx = canvas.getContext('2d');
+            ctx.translate(canvas.width, 0);
+            ctx.scale(-1, 1);
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            
+            const base64Image = canvas.toDataURL('image/jpeg', 0.9);
+            
+            checkinBtn.disabled = true;
+            spinner.style.display = 'inline-block';
+            btnText.innerText = 'Đang phân tích...';
+            scanLine.style.display = 'block';
+            showStatus("Đang phân tích khuôn mặt và gửi dữ liệu...", "info");
+            
+            try {
+                const response = await fetch('/api/checkin', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ image: base64Image })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    showStatus(`<b>Check-in thành công!</b><br>Trạng thái của bạn: ${data.emotion}<br>Thông báo đã được gửi lên Lark.`, "success");
+                } else {
+                    showStatus(`<b>Lỗi:</b> ${data.message}`, "error");
+                }
+            } catch (err) {
+                showStatus("Lỗi kết nối đến server. Vui lòng kiểm tra lại.", "error");
+                console.error(err);
+            } finally {
+                checkinBtn.disabled = false;
+                spinner.style.display = 'none';
+                btnText.innerText = 'Thực hiện Check-in';
+                scanLine.style.display = 'none';
+            }
+        });
+
+        window.addEventListener('load', setupCamera);
+    </script>
+</body>
+</html>

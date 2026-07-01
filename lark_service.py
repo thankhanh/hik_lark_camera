@@ -36,22 +36,40 @@ def upload_image(token, image_path):
     print("[Lark] Lỗi upload ảnh:", response.text)
     return None
 
-def send_image_message(token, receiver_email, image_key):
-    # Dùng email để gửi thẳng tin nhắn cho 1 cá nhân (dễ test nhất)
-    url = "https://open.larksuite.com/open-apis/im/v1/messages?receive_id_type=email"
+def send_image_message(token, receive_id, image_key, receive_id_type="chat_id"):
+    url = f"https://open.larksuite.com/open-apis/im/v1/messages?receive_id_type={receive_id_type}"
     headers = {
         'Authorization': f'Bearer {token}',
         'Content-Type': 'application/json'
     }
     payload = json.dumps({
-        "receive_id": receiver_email,
+        "receive_id": receive_id,
         "msg_type": "image",
         "content": json.dumps({"image_key": image_key})
     })
     response = requests.post(url, headers=headers, data=payload)
     if response.status_code == 200:
         if response.json().get("code") == 0:
-            print("[Lark] Thành công! Đã gửi tin nhắn.")
+            print(f"[Lark] Thành công! Đã gửi ảnh vào {receive_id_type}.")
             return True
     print("[Lark] Lỗi gửi tin nhắn:", response.text)
+    return False
+
+def send_text_message(token, receive_id, text, receive_id_type="chat_id"):
+    url = f"https://open.larksuite.com/open-apis/im/v1/messages?receive_id_type={receive_id_type}"
+    headers = {
+        'Authorization': f'Bearer {token}',
+        'Content-Type': 'application/json'
+    }
+    payload = json.dumps({
+        "receive_id": receive_id,
+        "msg_type": "text",
+        "content": json.dumps({"text": text})
+    })
+    response = requests.post(url, headers=headers, data=payload)
+    if response.status_code == 200:
+        if response.json().get("code") == 0:
+            print(f"[Lark] Thành công! Đã gửi tin nhắn text vào {receive_id_type}.")
+            return True
+    print("[Lark] Lỗi gửi tin nhắn text:", response.text)
     return False
