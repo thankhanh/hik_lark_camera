@@ -3,6 +3,7 @@ import cv2
 import base64
 import numpy as np
 import random
+from datetime import datetime
 from flask import Flask, render_template, request, jsonify
 
 # Import từ project hiện tại
@@ -29,7 +30,14 @@ def process_base64_image(base64_string, output_path="snapshot.jpg"):
         
     img_data = base64.b64decode(base64_string)
     nparr = np.frombuffer(img_data, np.uint8)
+    
+    if len(nparr) == 0:
+        raise ValueError("Dữ liệu ảnh trống! (Camera có thể chưa sẵn sàng hoặc bị chặn)")
+        
     img = cv2.imdecode(nparr, cv2.IMREAD_COLOR)
+    if img is None:
+        raise ValueError("Không thể giải mã hình ảnh từ camera.")
+        
     cv2.imwrite(output_path, img)
     return output_path, img
 
@@ -58,10 +66,20 @@ def checkin():
         # Mô phỏng AI nhận diện cảm xúc (do thư viện Deepface không tương thích với môi trường hiện tại)
         emotion_vi = random.choice(EMOTIONS)
             
-        # Vẽ khung quanh khuôn mặt để checkin
-        for (x,y,w,h) in faces:
-            cv2.rectangle(img,(x,y),(x+w,y+h),(255,0,0),2)
-        cv2.imwrite(img_path, img) # Lưu lại ảnh có khung mặt
+        # Thêm thông tin ngày giờ và địa điểm vào ảnh
+        current_time = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+        location = data.get("location", "Van phong SaiGonTrade")
+        
+        # Vẽ một lớp nền tối mờ để chữ hiển thị rõ hơn
+        overlay = img.copy()
+        cv2.rectangle(overlay, (10, 10), (550, 80), (0, 0, 0), -1)
+        cv2.addWeighted(overlay, 0.5, img, 0.5, 0, img)
+        
+        # Viết chữ (Thời gian, Địa điểm)
+        cv2.putText(img, f"Time: {current_time}", (20, 40), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 2)
+        cv2.putText(img, f"Loc : {location}", (20, 70), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 2)
+
+        cv2.imwrite(img_path, img) # Lưu lại ảnh cuối cùng
             
         # 3. Gửi lên Lark
         print("[Lark] Đang lấy token...")

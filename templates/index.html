@@ -248,11 +248,32 @@
         const spinner = document.getElementById('spinner');
         const btnText = document.getElementById('btnText');
 
-        // Khởi động webcam
+        // Khởi động webcam và định vị
+        let userLocation = "Van phong SaiGonTrade"; // Mặc định nếu không lấy được định vị
+
+        function setupLocation() {
+            if ("geolocation" in navigator) {
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        userLocation = `Lat: ${position.coords.latitude.toFixed(5)}, Lon: ${position.coords.longitude.toFixed(5)}`;
+                        console.log("Đã lấy được vị trí:", userLocation);
+                    },
+                    (error) => {
+                        console.warn("Không thể lấy định vị GPS (có thể do bị chặn hoặc chưa cấp quyền).", error);
+                    },
+                    { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
+                );
+            }
+        }
+
         async function setupCamera() {
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({ 
-                    video: { width: 1280, height: 720, facingMode: "user" } 
+                    video: { 
+                        width: { ideal: 4096 }, // Yêu cầu trình duyệt chọn độ phân giải nét nhất có thể (lên tới 4K)
+                        height: { ideal: 2160 }, 
+                        facingMode: "user" 
+                    } 
                 });
                 video.srcObject = stream;
             } catch (err) {
@@ -274,6 +295,11 @@
         }
 
         checkinBtn.addEventListener('click', async () => {
+            if (video.videoWidth === 0 || video.videoHeight === 0) {
+                showStatus("Camera chưa sẵn sàng hoặc bị lỗi. Vui lòng kiểm tra lại quyền truy cập camera.", "error");
+                return;
+            }
+
             canvas.width = video.videoWidth;
             canvas.height = video.videoHeight;
             const ctx = canvas.getContext('2d');
@@ -281,7 +307,8 @@
             ctx.scale(-1, 1);
             ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
             
-            const base64Image = canvas.toDataURL('image/jpeg', 0.9);
+            // Đẩy chất lượng ảnh chụp lên mức 1.0 (100% - Nét căng tuyệt đối)
+            const base64Image = canvas.toDataURL('image/jpeg', 1.0);
             
             checkinBtn.disabled = true;
             spinner.style.display = 'inline-block';
@@ -293,7 +320,10 @@
                 const response = await fetch('/api/checkin', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ image: base64Image })
+                    body: JSON.stringify({ 
+                        image: base64Image,
+                        location: userLocation 
+                    })
                 });
                 
                 const data = await response.json();
@@ -314,7 +344,10 @@
             }
         });
 
-        window.addEventListener('load', setupCamera);
+        window.addEventListener('load', () => {
+            setupCamera();
+            setupLocation();
+        });
     </script>
 </body>
 </html>
